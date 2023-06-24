@@ -1,13 +1,13 @@
 name: Create Tag
 
 on:
-  pull_request:
-    types:
-      - opened
-      - synchronize
+  push:
+    branches:
+      - master
 
 jobs:
   create-tag:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
 
     steps:
@@ -23,17 +23,32 @@ jobs:
           minor=$(echo $last_version | cut -d. -f2)
           patch=$(echo $last_version | cut -d. -f3)
 
-          if [[ ${{ github.event.pull_request.body }} == *"major"* ]]; then
-            major=$((major + 1))
-          elif [[ ${{ github.event.pull_request.body }} == *"minor"* ]]; then
-            minor=$((minor + 1))
-          fi
+          pull_request_number=$(echo ${{ github.event.head_commit.message }} | grep -oP '(?<=Merge pull request #)\d+' || echo "")
+          if [[ -n "$pull_request_number" ]]; then
+            pull_request_body=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{ github.repository }}/pulls/${pull_request_number}" | \
+              jq -r '.body // ""')
 
-          echo "v${major}.${minor}.${patch}"
+            if [[ $pull_request_body == *"major"* ]]; then
+              major=$((major + 1))
+            elif [[ $pull_request_body == *"minor"* ]]; then
+              minor=$((minor + 1))
+            fi
+
+            echo "v${major}.${minor}.${patch}"
+          else
+            echo "::set-output name=tag_version::"
+          fi
 
       - name: Create tag
         run: |
-          git config user.name "Your Name"
-          git config user.email "youremail@example.com"
-          git tag -a ${{ steps.determine-tag-version.outputs.tag_version }} -m "Tag created from pull request"
-          git push origin ${{ steps.determine-tag-version.outputs.tag_version }}
+          tag_version=${{ steps.determine-tag-version.outputs.tag_version }}
+
+          if [[ -n "$tag_version" ]]; then
+            git config user.name "RV05"
+            git config user.email "vrohit2397@gmail.com"
+            git tag -a $tag_version -m "Tag created from pull request"
+            git push origin $tag_version
+          else
+            echo "No tag version to create."
+          fi

@@ -48,11 +48,6 @@ jobs:
           fi
 
           echo "$tag_version"
-
-      - name: Create tag
-        run: |
-          tag_version=v1.2.4
-
           if [[ -n "$tag_version" ]]; then
             git config user.name "RV05"
             git config user.email "vrohit2397@gmail.com"

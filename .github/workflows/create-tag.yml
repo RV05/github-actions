@@ -43,6 +43,7 @@ jobs:
               tag_version="v${major}.${minor}.${patch}"
             else
               echo "::set-output name=tag_version::"
+              exit 0
             fi
           fi
 

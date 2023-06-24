@@ -13,42 +13,51 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       - name: Determine tag version
         id: determine-tag-version
         run: |
-          last_tag=$(git describe --tags --abbrev=0)
-          last_version=$(echo $last_tag | cut -dv -f2)
-          major=$(echo $last_version | cut -d. -f1)
-          minor=$(echo $last_version | cut -d. -f2)
-          patch=$(echo $last_version | cut -d. -f3)
-
-          pull_request_number=$(echo ${{ github.event.head_commit.message }} | grep -oP '(?<=Merge pull request #)\d+' || echo "")
-          if [[ -n "$pull_request_number" ]]; then
-            pull_request_body=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/${{ github.repository }}/pulls/${pull_request_number}" | \
-              jq -r '.body // ""')
-
-            if [[ $pull_request_body == *"major"* ]]; then
-              major=$((major + 1))
-            elif [[ $pull_request_body == *"minor"* ]]; then
-              minor=$((minor + 1))
-            fi
-
-            echo "v${major}.${minor}.${patch}"
+          tag_version=$(git describe --tags --abbrev=0 2>/dev/null)
+          if [[ -z "$tag_version" ]]; then
+            tag_version="v1.0.0"
           else
-            echo "::set-output name=tag_version::"
+            last_version=$(echo "$tag_version" | cut -dv -f2)
+            major=$(echo "$last_version" | cut -d. -f1)
+            minor=$(echo "$last_version" | cut -d. -f2)
+            patch=$(echo "$last_version" | cut -d. -f3)
+
+            pull_request_number=$(echo "${{ github.event.head_commit.message }}" | grep -oP '(?<=Merge pull request #)\d+' || echo "")
+            if [[ -n "$pull_request_number" ]]; then
+              pull_request_body=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                "https://api.github.com/repos/${{ github.repository }}/pulls/${pull_request_number}" | \
+                jq -r '.body // ""')
+
+              if [[ $pull_request_body == *"major"* ]]; then
+                major=$((major + 1))
+              elif [[ $pull_request_body == *"minor"* ]]; then
+                minor=$((minor + 1))
+              fi
+
+              tag_version="v${major}.${minor}.${patch}"
+            else
+              echo "::set-output name=tag_version::"
+              exit 0
+            fi
           fi
+
+          echo "$tag_version"
 
       - name: Create tag
         run: |
           tag_version=${{ steps.determine-tag-version.outputs.tag_version }}
 
           if [[ -n "$tag_version" ]]; then
-            git config user.name "RV05"
-            git config user.email "vrohit2397@gmail.com"
-            git tag -a $tag_version -m "Tag created from pull request"
-            git push origin $tag_version
+            git config user.name "Your Name"
+            git config user.email "youremail@example.com"
+            git tag -a "$tag_version" -m "Tag created from pull request"
+            git push origin "$tag_version"
           else
             echo "No tag version to create."
           fi

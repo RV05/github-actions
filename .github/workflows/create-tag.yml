@@ -51,7 +51,7 @@ jobs:
 
       - name: Create tag
         run: |
-          tag_version=${{ steps.determine-tag-version.outputs.tag_version }}
+          tag_version=v1.2.4
 
           if [[ -n "$tag_version" ]]; then
             git config user.name "RV05"

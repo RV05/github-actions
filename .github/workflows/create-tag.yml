@@ -54,8 +54,8 @@ jobs:
           tag_version=${{ steps.determine-tag-version.outputs.tag_version }}
 
           if [[ -n "$tag_version" ]]; then
-            git config user.name "Your Name"
-            git config user.email "youremail@example.com"
+            git config user.name "RV05"
+            git config user.email "vrohit2397@gmail.com"
             git tag -a "$tag_version" -m "Tag created from pull request"
             git push origin "$tag_version"
           else

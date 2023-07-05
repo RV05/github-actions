@@ -36,8 +36,13 @@ jobs:
 
               if [[ $pull_request_body == *"major"* ]]; then
                 major=$((major + 1))
+                minor=0
+                patch=0
               elif [[ $pull_request_body == *"minor"* ]]; then
                 minor=$((minor + 1))
+                patch=0
+              elif [[ $pull_request_body == *"patch"* ]]; then
+                patch=$((patch + 1))
               fi
 
               tag_version="v${major}.${minor}.${patch}"
